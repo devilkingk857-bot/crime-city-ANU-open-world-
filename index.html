@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CRIME CITY 3D — Open World Survival</title>
+  <meta name="description" content="Explore and survive in this ANU-style 3D crime city. Fight waves of enemies and upgrade your arsenal.">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#050510">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Three.js Library from unpkg (Legacy UMD version for global THREE) -->
+  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+  <script>
+    window.onerror = function(msg, url, line) {
+        alert("JS ERROR: " + msg + "\nURL: " + url + "\nLine: " + line);
+        return false;
+    };
+    window.addEventListener('load', () => {
+      if (typeof THREE === 'undefined') {
+          console.error('CRITICAL: Three.js failed to load!');
+          document.body.style.border = "5px solid red";
+      } else {
+          console.log('Three.js loaded successfully.');
+      }
+    });
+
+    // 📱 MOBILE UX FIX: Prevent pull-to-refresh, long-press, and zooming
+    document.addEventListener('touchstart', (e) => { 
+        if (e.touches.length > 1) e.preventDefault(); 
+    }, { passive: false });
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    window.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) e.preventDefault();
+    }, { passive: false });
+  </script>
+
+</head>
+<body>
+<div id="wrap">
+  <!-- Three.js Layer -->
+  <div id="three-container"></div>
+  
+  <div id="crt"></div>
+  <div id="vignette"></div>
+  
+  <!-- HUD Canvas -->
+  <canvas id="gc"></canvas>
+  
+  <div id="crosshair"></div>
+
+  <!-- WANTED STARS -->
+  <div id="wantedStars"></div>
+
+  <div id="hud">
+    <div class="hud-block">
+      <div class="hud-label">SURVIVOR</div>
+      <div id="healthBar"><div id="healthFill" style="width:100%"></div></div>
+      <div class="hud-val" id="hpNum">100</div>
+      <button class="m-btn-small" id="shopBtn" style="margin-top:10px;pointer-events:auto;">🛒 SHOP</button>
+    </div>
+    <!-- ... Rest of HUD remains same ... -->
+
+    <div class="hud-block" style="align-items:center">
+      <div class="hud-label">WAVE</div>
+      <div class="hud-val" id="waveNum">1</div>
+      <div class="hud-label" style="margin-top:4px">KILLS</div>
+      <div class="hud-val" id="killNum">0</div>
+    </div>
+    <div class="hud-block" style="align-items:flex-end">
+      <div class="hud-label">INTEL</div>
+      <div class="hud-val" id="scoreNum">0</div>
+      <div id="weaponDisplay">AUTO GUN</div>
+      <div id="ammoBar"></div>
+    </div>
+  </div>
+
+  <!-- MISSION BOX -->
+  <div id="mission-box">
+    <div id="mission-label">OBJECTIVE</div>
+    <div id="mission-text">SURVIVE THE CITY</div>
+  </div>
+
+  <!-- KILL STREAK -->
+  <div id="streakDisplay"></div>
+
+  <!-- MINIMAP -->
+  <div id="minimap">
+    <canvas id="minimapCanvas" width="130" height="130"></canvas>
+    <div id="minimapLabel">RADAR</div>
+  </div>
+
+  <!-- GRENADE BAR -->
+  <div id="grenadeBar">
+    <div class="hud-label">GRENADES</div>
+    <div id="grenadePips"></div>
+  </div>
+
+  <!-- PAUSE OVERLAY -->
+  <div id="pauseOverlay">
+    <h2>PAUSED</h2>
+    <p style="color:#876;font-family:'Bebas Neue';letter-spacing:3px;font-size:18px">ESC TO RESUME</p>
+    <button class="btn" id="resumeBtn">▶ RESUME</button>
+  </div>
+
+  <!-- Mobile Controls -->
+  <div id="stick-move" class="joystick-container"><div class="stick-base"><div class="stick-knob" id="knob-move"></div></div></div>
+  <div id="stick-aim" class="joystick-container"><div class="stick-base"><div class="stick-knob" id="knob-aim"></div></div></div>
+  <div id="mobile-buttons">
+    <div class="m-btn" id="btn-jump">JUMP</div>
+    <div class="m-btn" id="btn-sprint">RUN</div>
+    <div class="m-btn" id="btn-view">CAM</div>
+    <div class="m-btn" id="btn-reload">R</div>
+    <div class="m-btn" id="btn-knife">Q</div>
+    <div class="m-btn" id="btn-gren">💣</div>
+    <div class="m-btn" id="btn-switch">⇄</div>
+    <div class="m-btn" id="btn-drive" style="background: #ffcc00; color: #000; font-weight: bold; border-color: #000;">DRIVE</div>
+  </div>
+
+  <!-- SHOP OVERLAY -->
+  <div id="shopOverlay">
+    <div id="shopHeader">
+      <h2>BLACK MARKET</h2>
+      <button id="closeShop">✕</button>
+    </div>
+    <div id="itemGrid">
+      <div class="shop-item" onclick="buyItem('health')">
+        <div class="item-icon">💉</div>
+        <div class="item-name">ADRENALINE</div>
+        <div class="item-price">500</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('ammo')">
+        <div class="item-icon">🎒</div>
+        <div class="item-name">AMMO BOX</div>
+        <div class="item-price">300</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('grenade')">
+        <div class="item-icon">💣</div>
+        <div class="item-name">GRENADE PACK</div>
+        <div class="item-price">200</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('shield')">
+        <div class="item-icon">🛡️</div>
+        <div class="item-name">STIM PACK (15s)</div>
+        <div class="item-price">1000</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('rocket_launcher')">
+        <div class="item-icon">🚀</div>
+        <div class="item-name">RPG-7 (Rocket Launcher)</div>
+        <div class="item-price">2500</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('rocket_ammo')">
+        <div class="item-icon">🧨</div>
+        <div class="item-name">ROCKET AMMO (x2)</div>
+        <div class="item-price">800</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start/End Overlay -->
+  <div id="overlay">
+    <div class="ov-title">CRIME CITY 3D</div>
+    <div class="ov-sub">ANU-STYLE SURVIVAL PROTOCOL</div>
+    <div class="ov-score" id="ovScore" style="display:none;font-family:'Bebas Neue';font-size:32px;color:var(--ammo);"></div>
+    <div class="ov-wave" id="ovWave" style="display:none;font-family:'Bebas Neue';font-size:20px;color:var(--green);"></div>
+    <div id="ovStreak" style="display:none;font-family:'Bebas Neue';font-size:18px;color:#ff6600;"></div>
+    <button class="btn" id="startBtn">▶ INITIATE</button>
+  </div>
+
+  <div id="leaderboard">
+    <h3 style="color:var(--blood);font-family:'Bebas Neue';letter-spacing:3px;font-size:16px;margin-bottom:10px;border-bottom:1px solid #311;padding-bottom:5px;">TERMINAL LOGS</h3>
+    <div id="lbList"></div>
+  </div>
+
+  <div id="controls-hint" class="hide-mobile">
+    WASD — MOVE | MOUSE — AIM & FIRE | Q — KNIFE | G — GRENADE | R — RELOAD | TAB — SWITCH | ESC — PAUSE | V — CAMERA
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>

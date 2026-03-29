@@ -1,0 +1,329 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;700&family=Special+Elite&display=swap');
+
+:root {
+  --blood: #ff1111;
+  --gore: #880000;
+  --green: #00ff66;
+  --ammo: #ffcc00;
+  --dim: #0a0a0a;
+  --muted: #444;
+  --text: #e0d0c0;
+  --accent: #ff4400;
+  --glass: rgba(15, 12, 10, 0.7);
+  --yellow: #ffff00;
+  --blue: #00ccff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Outfit', sans-serif;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+}
+
+#wrap {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dim);
+  overflow: hidden;
+}
+
+canvas { display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 100px rgba(255,0,0,0.15); }
+
+#three-container {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 10;
+}
+
+#gc {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 20;
+  pointer-events: none; /* Let clicks pass to Three.js if needed, or handle in JS */
+}
+
+#crt {
+  position: absolute; inset: 0;
+  background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.1) 50%), linear-gradient(90deg, rgba(255,0,0,0.03), rgba(0,255,0,0.01), rgba(0,0,100,0.03));
+  background-size: 100% 3px, 3px 100%;
+  pointer-events: none; z-index: 30; opacity: 0.3;
+}
+
+#vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
+  pointer-events: none; z-index: 25;
+}
+
+#hud {
+  position: absolute;
+  top: env(safe-area-inset-top, 10px);
+  left: env(safe-area-inset-left, 10px);
+  right: env(safe-area-inset-right, 10px);
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 10px 15px; pointer-events: none; z-index: 40;
+}
+#hud .hud-block:first-child { margin-top: 150px; } /* Push health below map & grenades */
+
+
+.hud-block {
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);
+}
+
+.hud-label { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.3); text-transform: uppercase; }
+.hud-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+#healthBar { width: 120px; height: 6px; background: #200; border-radius: 3px; overflow: hidden; margin: 4px 0; }
+#healthFill { height: 100%; background: linear-gradient(90deg, #f00, #f88); box-shadow: 0 0 10px #f00; transition: width 0.3s; }
+
+#weaponDisplay { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1.5px; color: var(--ammo); text-shadow: 0 0 10px var(--ammo); margin-top: 5px; }
+#ammoBar { display: flex; gap: 3px; margin-top: 5px; flex-wrap: wrap; max-width: 140px; }
+.ammo-pip { width: 4px; height: 10px; background: var(--ammo); border-radius: 1px; box-shadow: 0 0 3px var(--ammo); }
+.ammo-pip.empty { background: #222; box-shadow: none; }
+
+#streakDisplay {
+  position: absolute;
+  top: 120px; left: 50%; transform: translateX(-50%);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px; letter-spacing: 4px;
+  color: #ffcc00; text-shadow: 0 0 20px #ffcc00;
+  pointer-events: none; z-index: 45;
+  opacity: 0; transition: opacity 0.2s;
+  text-align: center;
+}
+
+#mission-box {
+  position: absolute; top: 75px; left: 50%; transform: translateX(-50%);
+  background: var(--glass); backdrop-filter: blur(10px);
+  padding: 6px 15px; border-radius: 10px; border: 1px dashed var(--accent);
+  z-index: 40; pointer-events: none; text-align: center;
+  min-width: 200px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+#mission-label { font-family: 'Bebas Neue'; font-size: 8px; letter-spacing: 2px; color: var(--accent); margin-bottom: 2px; }
+#mission-text { font-family: 'Outfit'; font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+
+
+#minimap {
+  position: absolute;
+  top: 15px; left: 15px;
+  width: 90px; height: 90px;
+  background: rgba(0,0,0,0.85);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 1001;
+  pointer-events: auto;
+  box-shadow: 0 0 15px rgba(0,0,0,0.8);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+}
+
+
+#minimap.large {
+  width: min(80vw, 500px);
+  height: min(80vw, 500px);
+  bottom: 50%; right: 50%;
+  transform: translate(50%, 50%);
+  border-color: var(--accent);
+}
+#minimapCanvas { width: 100%; height: 100%; }
+#minimapLabel {
+  position: absolute; top: 4px; left: 0; right: 0;
+  text-align: center; font-family: 'Bebas Neue'; font-size: 10px;
+  letter-spacing: 2px; color: rgba(255,255,255,0.3);
+}
+
+#shopBtn:hover {
+  background: var(--accent);
+  color: #000;
+  box-shadow: 0 0 15px var(--accent);
+}
+
+
+#grenadeBar {
+  position: absolute;
+  top: 115px; left: 15px;
+
+
+  background: var(--glass); backdrop-filter: blur(8px);
+  padding: 6px 10px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+  z-index: 40; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+#grenadeBar .hud-label { font-size: 10px; }
+#grenadePips { display: flex; gap: 4px; }
+.gren-pip { width: 10px; height: 14px; background: #33ff66; border-radius: 2px; box-shadow: 0 0 6px #33ff66; }
+.gren-pip.empty { background: #222; box-shadow: none; }
+
+.joystick-container { position: absolute; bottom: 40px; width: 140px; height: 140px; z-index: 50; display: none; touch-action: none; }
+#stick-move { left: 40px; }
+#stick-aim { display: none !important; }
+
+
+.stick-base { width: 100%; height: 100%; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; }
+.stick-knob { width: 50px; height: 50px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; position: absolute; box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+
+#mobile-buttons { 
+  position: absolute; bottom: 10px; right: 10px; 
+  display: none; width: 200px; height: 200px; 
+  z-index: 50; pointer-events: none;
+}
+.m-btn { 
+  position: absolute; width: 48px; height: 48px; 
+  background: var(--glass); border: 1.2px solid rgba(255,255,255,0.2); 
+  border-radius: 50%; color: #fff; display: flex; 
+  align-items: center; justify-content: center; 
+  font-family: 'Bebas Neue', sans-serif; font-size: 13px; 
+  box-shadow: 0 0 10px rgba(0,0,0,0.5); pointer-events: auto;
+}
+/* Ergonomic Arc Layout */
+#btn-jump   { bottom: 110px; right: 15px; width: 55px; height: 55px; border-color: var(--ammo); }
+#btn-sprint { bottom: 75px; right: 85px; }
+#btn-reload { bottom: 10px; right: 110px; }
+#btn-knife  { bottom: 120px; right: 90px; scale: 0.8; }
+#btn-gren   { bottom: 170px; right: 130px; scale: 0.8; }
+#btn-switch { bottom: 170px; right: 60px; scale: 0.8; }
+#btn-view   { top: 5px; right: -5px; scale: 0.7; opacity: 0.4; }
+
+#btn-drive { 
+  bottom: 0px; right: 170px; width: 60px; height: 35px; 
+  border-radius: 8px; font-weight: bold; background: var(--yellow); 
+  color: #000; border-color: #111; font-size: 11px;
+}
+
+
+#overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85); color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 999; gap: 15px; text-align: center; padding: 20px;
+}
+
+.ov-title { font-family: 'Bebas Neue', sans-serif; font-size: 72px; letter-spacing: 12px; color: #ff1111; text-shadow: 0 0 30px rgba(255,0,0,0.5); line-height: 0.9; }
+.ov-sub { font-family: 'Outfit', sans-serif; font-size: 14px; color: #876; letter-spacing: 4px; text-transform: uppercase; }
+
+.btn { background: transparent; border: 1px solid #ff1111; color: #ff1111; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 4px; padding: 12px 40px; cursor: pointer; margin-top: 20px; transition: all 0.3s; box-shadow: 0 0 15px rgba(255,0,0,0.2); }
+.btn:hover { background: var(--blood); color: #000; box-shadow: 0 0 30px rgba(255,0,0,0.4); transform: scale(1.05); }
+
+#pauseOverlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.75);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 90; gap: 20px;
+}
+#pauseOverlay h2 { font-family: 'Bebas Neue'; font-size: 60px; letter-spacing: 10px; color: #fff; }
+
+#wantedStars {
+  position: absolute; top: 120px; right: 20px;
+  font-size: 32px; color: var(--yellow);
+  text-shadow: 0 0 15px rgba(255, 255, 0, 0.8);
+  font-family: 'Bebas Neue'; letter-spacing: 5px;
+  z-index: 45; pointer-events: none;
+}
+
+.m-btn-small {
+  padding: 5px 12px; font-family: 'Bebas Neue'; font-size: 14px;
+  background: var(--glass); border: 1px solid var(--accent);
+  color: #fff; cursor: pointer; border-radius: 4px;
+}
+
+#shopOverlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.95);
+  display: none; flex-direction: column; align-items: center; 
+  z-index: 10000; padding: 20px; overflow-y: auto;
+}
+#shopHeader { 
+  width: 100%; max-width: 500px; display: flex; justify-content: space-between; 
+  align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--accent); 
+  padding-bottom: 10px; position: sticky; top: 0; background: rgba(0,0,0,0.95); z-index: 10;
+}
+
+#shopHeader h2 { font-family: 'Bebas Neue'; font-size: 40px; color: var(--accent); letter-spacing: 4px; }
+#closeShop { background: none; border: none; color: #fff; font-size: 30px; cursor: pointer; }
+
+#itemGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 500px; }
+.shop-item { background: #111; border: 1px solid #333; padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+.shop-item:hover { border-color: var(--green); background: #1a1a1a; transform: translateY(-5px); }
+.item-icon { font-size: 40px; margin-bottom: 10px; }
+.item-name { font-family: 'Bebas Neue'; color: #888; letter-spacing: 1px; margin-bottom: 5px; }
+.item-price { font-family: 'Bebas Neue'; color: var(--green); font-size: 24px; }
+.item-price::before { content: 'INTEL '; font-size: 10px; vertical-align: middle; margin-right: 5px; }
+
+#leaderboard { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 170px; background: var(--glass); backdrop-filter: blur(5px); padding: 15px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); z-index: 40; display: none; }
+.lb-row { display: flex; justify-content: space-between; font-size: 12px; color: #876; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.lb-rank { color: var(--ammo); font-weight: bold; }
+@media (min-width: 1024px) { #leaderboard { display: block; } }
+
+#crosshair {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 24px; height: 24px; color: var(--green);
+  z-index: 50; pointer-events: none; opacity: 0.6;
+}
+#crosshair::before, #crosshair::after { content: ''; position: absolute; background: currentColor; }
+#crosshair::before { top: 0; left: 11px; width: 2px; height: 24px; }
+#crosshair::after { top: 11px; left: 0; width: 24px; height: 2px; }
+
+#controls-hint { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; font-size: 11px; color: #543; letter-spacing: 2px; z-index: 40; }
+@media (max-width: 768px) { .hide-mobile { display: none; } }
+
+/* 📱 MOBILE LANDSCAPE OPTIMIZATION (Small Screens) */
+@media screen and (max-height: 500px) {
+  .hud-block { padding: 5px 10px; gap: 1px; }
+  .hud-val { font-size: 18px; }
+  .hud-label { font-size: 9px; }
+  #healthBar { width: 90px; height: 4px; }
+  #weaponDisplay { font-size: 14px; }
+  .ammo-pip { height: 8px; width: 3px; }
+  
+  #minimap { width: 75px; height: 75px; top: 10px; left: 10px; border-radius: 8px; }
+  #hud .hud-block:first-child { margin-top: 130px; max-width: 140px; padding: 4px 8px; }
+  #hud .hud-block:last-child { max-width: 120px; padding: 4px 8px; }
+  #grenadeBar { top: 90px; left: 10px; padding: 3px 6px; }
+  
+  #wantedStars { font-size: 18px; top: 110px; right: 15px; letter-spacing: 2px; }
+  #mobile-buttons { display: none; } /* Re-enabled by JS but layout fixed above */
+  
+  .joystick-container { width: 100px; height: 100px; bottom: 25px; }
+  #stick-move { left: 25px; }
+  #stick-aim { right: 25px; }
+  .stick-knob { width: 32px; height: 32px; }
+  
+  #mission-box { top: 60px; min-width: 160px; padding: 3px 8px; border-style: solid; opacity: 0.9; }
+  #mission-text { font-size: 10px; }
+  
+  .hud-val { font-size: 16px; }
+  #healthBar { width: 80px; height: 3px; }
+  #weaponDisplay { font-size: 12px; }
+  #ammoBar { max-width: 80px; }
+
+  .ov-title { font-size: 42px; }
+  .ov-sub { font-size: 9px; }
+  .btn { padding: 6px 20px; font-size: 16px; }
+
+  #shopHeader h2 { font-size: 24px; }
+  #closeShop { font-size: 24px; }
+  #itemGrid { grid-template-columns: 1fr 1fr; gap: 10px; max-width: 100%; }
+  .shop-item { padding: 10px; }
+  .item-icon { font-size: 24px; margin-bottom: 5px; }
+  .item-name { font-size: 12px; }
+  .item-price { font-size: 18px; }
+}
+
+
