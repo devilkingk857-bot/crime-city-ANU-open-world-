@@ -657,7 +657,7 @@ document.addEventListener('keyup', e => { keys[e.code] = false; });
 window.addEventListener('mousemove', e => {
     if (document.pointerLockElement === document.body) {
         camYaw -= e.movementX * 0.003;
-        camPitch = Math.max(-0.5, Math.min(1.2, camPitch - e.movementY * 0.003));
+        camPitch = Math.max(-0.2, Math.min(1.2, camPitch - e.movementY * 0.003));
     } else {
         mouseX = (e.clientX / window.innerWidth) * 2 - 1;
         mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -777,7 +777,7 @@ function initMobileControls() {
                 
                 const sens = 0.006;
                 camYaw -= dx * sens;
-                camPitch = Math.max(-0.8, Math.min(0.8, camPitch - dy * sens));
+                camPitch = Math.max(-0.3, Math.min(0.8, camPitch - dy * sens));
                 
                 lastTouchX = t.clientX;
                 lastTouchY = t.clientY;
@@ -1002,7 +1002,8 @@ function update(time) {
   } else {
       const tx = targetX - Math.sin(camYaw) * zoomDist * Math.cos(camPitch);
       const tz = targetZ - Math.cos(camYaw) * zoomDist * Math.cos(camPitch);
-      const ty = (playerDriving ? 150 : 100) + Math.sin(camPitch) * zoomDist + 150; 
+      let ty = (playerDriving ? 150 : 100) + Math.sin(camPitch) * zoomDist + 150; 
+      ty = Math.max(40, ty); // Prevent camera from going underground
       camera.position.lerp(new THREE.Vector3(tx, ty, tz), 0.1); 
       camera.lookAt(targetX, playerDriving ? 40 : 100, targetZ);
   }
